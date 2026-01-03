@@ -1,0 +1,12 @@
+# IDE
+.idea/
+
+# Release packages
+*.zip
+
+# Gemini files
+.gemini.md
+
+# OS files
+.DS_Store
+Thumbs.db
