@@ -59,7 +59,8 @@
         </div>
     </header>
 
-    <main>
+    <!-- 工具栏区域（固定不滚动） -->
+    <section class="section-header">
         <div class="toolbar">
             <div class="search-container">
                 <span class="search-icon">
@@ -77,9 +78,20 @@
                     <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
                 </svg>
             </button>
+            <button id="tagsManageBtn" class="toolbar-btn" title="标签管理">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                    <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+            </button>
             <button id="toggleAddBtn" class="add-btn-main" title="添加新账号">+</button>
         </div>
 
+        <!-- 标签筛选栏 -->
+        <div id="tagFilterBar" class="tag-filter-bar"></div>
+    </section>
+
+    <main>
         <div id="modalOverlay" class="modal-overlay"></div>
 
         <div id="editForm" class="modal-form">
@@ -97,9 +109,68 @@
                     </svg>
                 </button>
             </div>
+            <div class="form-row tag-selector-row">
+                <label>选择标签:</label>
+                <div id="tagSelector" class="tag-selector">
+                    <!-- Tags will be injected by JS -->
+                </div>
+            </div>
             <div class="form-actions">
                 <button id="cancelEditBtn" class="btn btn-secondary">取消</button>
                 <button id="saveBtn" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+
+        <!-- 标签管理弹窗 -->
+        <div id="tagManagerModal" class="modal-form tag-manager-modal">
+            <h3>标签管理</h3>
+            <div id="tagList" class="tag-list">
+                <!-- Tags will be injected by JS -->
+            </div>
+            <div class="tag-add-section">
+                <input type="text" id="newTagName" class="form-input" placeholder="新标签名称" autocomplete="off">
+                <div id="colorPicker" class="color-picker">
+                    <span class="color-option" data-color="#22c55e" style="background:#22c55e"></span>
+                    <span class="color-option" data-color="#3b82f6" style="background:#3b82f6"></span>
+                    <span class="color-option" data-color="#eab308" style="background:#eab308"></span>
+                    <span class="color-option" data-color="#a855f7" style="background:#a855f7"></span>
+                    <span class="color-option" data-color="#ef4444" style="background:#ef4444"></span>
+                    <span class="color-option" data-color="#06b6d4" style="background:#06b6d4"></span>
+                    <span class="color-option" data-color="#ec4899" style="background:#ec4899"></span>
+                    <span class="color-option selected" data-color="#6b7280" style="background:#6b7280"></span>
+                </div>
+                <button id="addTagBtn" class="btn btn-primary">添加</button>
+            </div>
+            <div class="form-actions">
+                <button id="closeTagManagerBtn" class="btn btn-secondary">关闭</button>
+            </div>
+        </div>
+
+        <!-- 标签编辑弹窗遮罩 -->
+        <div id="tagEditOverlay" class="tag-edit-overlay"></div>
+
+        <!-- 标签编辑弹窗 -->
+        <div id="tagEditModal" class="modal-form tag-edit-modal">
+            <h3>编辑标签</h3>
+            <div class="form-row">
+                <input type="text" id="editTagName" class="form-input" placeholder="标签名称" autocomplete="off">
+            </div>
+            <div class="form-row">
+                <label style="font-size:12px;color:var(--text-sub);margin-bottom:6px;">选择颜色:</label>
+                <div id="editColorPicker" class="color-picker">
+                    <span class="color-option" data-color="#22c55e" style="background:#22c55e"></span>
+                    <span class="color-option" data-color="#3b82f6" style="background:#3b82f6"></span>
+                    <span class="color-option" data-color="#eab308" style="background:#eab308"></span>
+                    <span class="color-option" data-color="#a855f7" style="background:#a855f7"></span>
+                    <span class="color-option" data-color="#ef4444" style="background:#ef4444"></span>
+                    <span class="color-option" data-color="#06b6d4" style="background:#06b6d4"></span>
+                    <span class="color-option" data-color="#ec4899" style="background:#ec4899"></span>
+                    <span class="color-option" data-color="#6b7280" style="background:#6b7280"></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button id="cancelEditTagBtn" class="btn btn-secondary">取消</button>
+                <button id="saveEditTagBtn" class="btn btn-primary">保存</button>
             </div>
         </div>
 
@@ -126,6 +197,20 @@
     </div>
 
     <input type="file" id="fileInput" accept=".json,.txt" style="display: none;">
+
+    <!-- 删除确认弹窗 -->
+    <div id="deleteModal" class="delete-modal">
+        <div class="delete-modal-content">
+            <div class="delete-icon">🗑️</div>
+            <h3>确认删除</h3>
+            <p id="deleteMessage">确定要删除该账号吗？此操作不可撤销。</p>
+            <div class="delete-actions">
+                <button id="cancelDeleteBtn" class="btn btn-secondary">取消</button>
+                <button id="confirmDeleteBtn" class="btn btn-danger">删除</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script src="lib/Sortable.min.js"></script>
