@@ -78,7 +78,7 @@ function createStore(initialState = {}) {
 // 从所有 tagOrders 中移除指定 key
 function removeKeyFromTagOrders(tagOrders, keyToRemove) {
     const newTagOrders = {};
-    for (const k in tagOrders) {
+    for (const k of Object.keys(tagOrders)) {
         newTagOrders[k] = tagOrders[k].filter(t => t !== keyToRemove);
     }
     return newTagOrders;
@@ -462,10 +462,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTagManager(store);
     renderTagFilterBar(store);
 
-    // 初始化工具菜单图标
-    $('exportIcon').innerHTML = ICONS.export;
-    $('importIcon').innerHTML = ICONS.import;
-    $('warningIcon').innerHTML = ICONS.warning;
+    // 初始化工具菜单图标（安全访问）
+    const exportIcon = $('exportIcon');
+    const importIcon = $('importIcon');
+    const warningIcon = $('warningIcon');
+    if (exportIcon) exportIcon.innerHTML = ICONS.export;
+    if (importIcon) importIcon.innerHTML = ICONS.import;
+    if (warningIcon) warningIcon.innerHTML = ICONS.warning;
 
     // Theme Init
     const isDark = data[THEME_KEY] === 'dark' || (!data[THEME_KEY] && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -569,9 +572,9 @@ async function saveAccount(store) {
         const oldTagIds = accounts[editIndex].tagIds || [];
         const key = accounts[editIndex].key;
 
-        const newAccounts = [...accounts];
-        newAccounts[editIndex].name = name;
-        newAccounts[editIndex].tagIds = tagIds;
+        const newAccounts = accounts.map((acc, i) =>
+            i === editIndex ? { ...acc, name, tagIds } : acc
+        );
 
         const newAccountMap = createAccountMap(newAccounts);
         const newTagOrders = updateTagOrdersOnTagChange(tagOrders, key, oldTagIds, tagIds);
@@ -590,7 +593,9 @@ async function saveAccount(store) {
     // 新增模式
     let key = $('inputKey').value.trim();
     if (!name || !key) return showToast("请填写完整");
+    // 处理可能带引号的 key
     if (key.startsWith('"') && key.endsWith('"')) key = key.slice(1, -1);
+    if (!key.trim()) return showToast("请输入有效的 Key");
 
     // 使用 accountMap O(1) 检查重复
     if (accountMap.has(key)) {
@@ -716,9 +721,13 @@ async function syncCurrentAccount(store) {
     const result = await grabUserInfo();
 
     if (result?.name || result?.plan) {
-        const newAccounts = [...accounts];
-        if (result.name) newAccounts[idx].name = result.name;
-        if (result.plan) newAccounts[idx].plan = result.plan;
+        const newAccounts = accounts.map((acc, i) =>
+            i === idx ? {
+                ...acc,
+                name: result.name || acc.name,
+                plan: result.plan || acc.plan
+            } : acc
+        );
 
         await chrome.storage.local.set({ [STORAGE_KEY]: newAccounts });
         store.setState({ accounts: newAccounts });
