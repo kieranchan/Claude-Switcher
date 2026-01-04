@@ -12,6 +12,12 @@
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
     --input-bg: #ffffff;
+    /* Badge Colors */
+    --badge-current-bg: #dbeafe;
+    --badge-current-color: #1e40af;
+    --badge-pro-bg: linear-gradient(135deg, #9333ea, #7c3aed);
+    --badge-team-bg: linear-gradient(135deg, #3b82f6, #2563eb);
+    --badge-free-bg: linear-gradient(135deg, #6b7280, #4b5563);
 }
 
 /* Dark Mode (Triggered by class) */
@@ -243,24 +249,24 @@ main {
 }
 
 .badge-current {
-    background: #dbeafe;
-    color: #1e40af;
+    background: var(--badge-current-bg);
+    color: var(--badge-current-color);
 }
 
 .badge-pro {
-    background: linear-gradient(135deg, #9333ea, #7c3aed);
+    background: var(--badge-pro-bg);
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .badge-team {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    background: var(--badge-team-bg);
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .badge-free {
-    background: linear-gradient(135deg, #6b7280, #4b5563);
+    background: var(--badge-free-bg);
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }

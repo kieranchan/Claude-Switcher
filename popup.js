@@ -160,6 +160,11 @@ function createAccountMap(accounts) {
     return new Map(accounts.map(a => [a.key, a]));
 }
 
+// 创建标签 Map (id -> tag)，用于 O(1) 查找
+function createTagMap(tags) {
+    return new Map(tags.map(t => [t.id, t]));
+}
+
 // 通用事件委托函数
 function delegate(container, selector, handler) {
     container.addEventListener('click', (e) => {
@@ -167,12 +172,26 @@ function delegate(container, selector, handler) {
         if (target) handler(target, e);
     });
 }
+// 错误边界包装器 - 防止单操作失败导致崩溃
+async function trySafe(fn, fallbackMsg = '操作失败') {
+    try {
+        await fn();
+    } catch (e) {
+        console.error('[Claude-Switcher Error]', e);
+        showToast(fallbackMsg);
+    }
+}
 
-// 合并存储和状态更新
+// 合并存储和状态更新（带错误处理）
 async function saveAndUpdate(storageData, stateData, store, callback) {
-    await chrome.storage.local.set(storageData);
-    store.setState(stateData);
-    if (callback) callback();
+    try {
+        await chrome.storage.local.set(storageData);
+        store.setState(stateData);
+        if (callback) callback();
+    } catch (e) {
+        console.error('[Claude-Switcher] saveAndUpdate failed:', e);
+        showToast('保存失败，请重试');
+    }
 }
 
 // 初始化/同步 tagOrders，确保数据完整性
@@ -309,10 +328,10 @@ function AccountCard(account, index, store) {
         badges.innerHTML = badgeHTML;
 
         // 显示标签
-        const { tags: allTags } = store.getState();
+        const { tagMap } = store.getState();
         const accountTagIds = account.tagIds || [];
         tagsContainer.innerHTML = accountTagIds.map(tagId => {
-            const tag = allTags.find(t => t.id === tagId);
+            const tag = tagMap.get(tagId); // O(1) 查找
             if (!tag) return '';
             return `<span class="tag" style="background:${tag.color}20;color:${tag.color};border:1px solid ${tag.color}40">${tag.name}</span>`;
         }).join('');
@@ -419,6 +438,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let tagOrders = data[TAG_ORDERS_KEY] || {};
     const accountKeySet = new Set(accounts.map(acc => acc.key));
     const accountMap = createAccountMap(accounts);
+    const tagMap = createTagMap(tags);
 
     // 初始化/同步 tagOrders
     tagOrders = await initTagOrders(accounts, tagOrders);
@@ -427,6 +447,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         accounts,
         accountMap,
         tags,
+        tagMap,
         tagOrders,
         filterTagId,
         accountKeySet,
@@ -710,20 +731,25 @@ async function syncCurrentAccount(store) {
 async function switchAccount(key) {
     if (!key) return;
 
-    await chrome.cookies.set({
-        url: CLAUDE_URL, name: COOKIE_NAME, value: key, domain: ".claude.ai",
-        path: "/", secure: true, sameSite: "lax", expirationDate: (Date.now() / 1000) + (86400 * 30)
-    });
-    await chrome.storage.local.set({ lastActiveKey: key });
+    try {
+        await chrome.cookies.set({
+            url: CLAUDE_URL, name: COOKIE_NAME, value: key, domain: ".claude.ai",
+            path: "/", secure: true, sameSite: "lax", expirationDate: (Date.now() / 1000) + (86400 * 30)
+        });
+        await chrome.storage.local.set({ lastActiveKey: key });
 
-    window.store.setState({ activeKey: key });
+        window.store.setState({ activeKey: key });
 
-    const [tab] = await chrome.tabs.query({ url: "*://claude.ai/*" });
-    if (tab) {
-        await chrome.tabs.update(tab.id, { url: "https://claude.ai/chats", active: true });
-        chrome.windows.update(tab.windowId, { focused: true });
-    } else {
-        chrome.tabs.create({ url: "https://claude.ai/chats" });
+        const [tab] = await chrome.tabs.query({ url: "*://claude.ai/*" });
+        if (tab) {
+            await chrome.tabs.update(tab.id, { url: "https://claude.ai/chats", active: true });
+            chrome.windows.update(tab.windowId, { focused: true });
+        } else {
+            chrome.tabs.create({ url: "https://claude.ai/chats" });
+        }
+    } catch (e) {
+        console.error('[Claude-Switcher] switchAccount failed:', e);
+        showToast('切换账号失败，请重试');
     }
 }
 
@@ -1003,9 +1029,10 @@ async function addNewTag(store) {
     };
 
     const newTags = [...tags, newTag];
+    const newTagMap = createTagMap(newTags);
     await saveAndUpdate(
         { [TAGS_KEY]: newTags },
-        { tags: newTags },
+        { tags: newTags, tagMap: newTagMap },
         store,
         () => renderTagList(store)
     );
@@ -1014,8 +1041,8 @@ async function addNewTag(store) {
 }
 
 function deleteTag(tagId, store) {
-    const { tags } = store.getState();
-    const tag = tags.find(t => t.id === tagId);
+    const { tagMap } = store.getState();
+    const tag = tagMap.get(tagId);
     const tagName = tag ? tag.name : '此标签';
 
     showDeleteModal(tagName, async () => {
@@ -1031,10 +1058,12 @@ function deleteTag(tagId, store) {
         // 从 tagOrders 中移除该标签的排序
         const newTagOrders = { ...tagOrders };
         delete newTagOrders[tagId];
+        const newTagMap = createTagMap(newTags);
+        const newAccountMap = createAccountMap(newAccounts);
 
         await saveAndUpdate(
             { [TAGS_KEY]: newTags, [STORAGE_KEY]: newAccounts, [TAG_ORDERS_KEY]: newTagOrders },
-            { tags: newTags, accounts: newAccounts, tagOrders: newTagOrders },
+            { tags: newTags, tagMap: newTagMap, accounts: newAccounts, accountMap: newAccountMap, tagOrders: newTagOrders },
             store,
             () => { renderTagList(store); renderTagFilterBar(store); }
         );
@@ -1044,8 +1073,8 @@ function deleteTag(tagId, store) {
 
 // 打开标签编辑弹窗
 function openTagEditModal(tagId, store) {
-    const { tags } = store.getState();
-    const tag = tags.find(t => t.id === tagId);
+    const { tagMap } = store.getState();
+    const tag = tagMap.get(tagId);
     if (!tag) return;
 
     _editingTagId = tagId;
@@ -1084,10 +1113,11 @@ async function saveEditTag(store) {
 
     const { tags } = store.getState();
     const newTags = tags.map(t => t.id === tagId ? { ...t, name: newName, color: newColor } : t);
+    const newTagMap = createTagMap(newTags);
 
     await saveAndUpdate(
         { [TAGS_KEY]: newTags },
-        { tags: newTags },
+        { tags: newTags, tagMap: newTagMap },
         store,
         () => { renderTagList(store); renderTagFilterBar(store); }
     );
