@@ -5,16 +5,26 @@
     <meta charset="UTF-8">
     <title>Claude Account Switcher</title>
     <link rel="stylesheet" href="popup.css">
-    <!-- Inline SVG Defs for reuse -->
+    <!-- Hand-drawn SVG Filter -->
+    <svg style="position:absolute;width:0;height:0">
+        <defs>
+            <filter id="handdrawn" x="-10%" y="-10%" width="120%" height="120%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R"
+                    yChannelSelector="G" />
+            </filter>
+        </defs>
+    </svg>
     <style>
         .svg-icon {
             width: 16px;
             height: 16px;
             fill: none;
             stroke: currentColor;
-            stroke-width: 2;
+            stroke-width: 1.8;
             stroke-linecap: round;
             stroke-linejoin: round;
+            filter: url(#handdrawn);
         }
     </style>
 </head>
@@ -51,10 +61,11 @@
             </button>
             <!-- Tools Dropdown (Moved to Header) -->
             <div class="tools-dropdown" id="toolsMenu">
-                <button class="tools-item" id="exportBtn">📤 导出配置</button>
-                <button class="tools-item" id="importBtn">📥 导入配置</button>
+                <button class="tools-item" id="exportBtn"><span id="exportIcon"></span> 导出配置</button>
+                <button class="tools-item" id="importBtn"><span id="importIcon"></span> 导入配置</button>
                 <div style="height:1px; background:#eee; margin:4px 0;"></div>
-                <button class="tools-item" id="clearAllBtn" style="color: red;">⚠️ 清空数据</button>
+                <button class="tools-item" id="clearAllBtn" style="color: red;"><span id="warningIcon"></span>
+                    清空数据</button>
             </div>
         </div>
     </header>

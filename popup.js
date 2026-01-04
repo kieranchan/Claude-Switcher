@@ -9,17 +9,39 @@ const FILTER_TAG_KEY = "filterTagId";
 const TAG_ORDERS_KEY = "tagOrders";
 const THEME_KEY = "user_theme";
 
-// Simplified Icons
+// 模块级私有状态（替代 window 全局变量）
+let _editIndex = -1;
+let _grabPlan = null;
+let _editingTagId = null;
+
+// Hand-drawn Style Icons - 真正的手绘风格（带抖动感）
 const ICONS = {
-    copy: `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
-    edit: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
-    trash: `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
-    clock: `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
-    sun: `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
-    moon: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`,
-    login: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`,
-    save: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`,
-    grab: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`
+    // 复制 - 手绘两张纸
+    copy: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M9 4.2c-.1.1-.3.1-.2.3l.1 10.8c.1.2.1.4.4.4l6.9-.1c.2 0 .4-.2.4-.4l-.1-10.7c0-.2-.2-.4-.4-.4L9.3 4c-.1 0-.2.1-.3.2z" fill="none" stroke-linecap="round"/><path d="M6.2 7.8c-.3.1-.5.1-.4.4l.2 10.6c0 .3.2.5.5.5l6.8-.2c.2 0 .4-.1.4-.4" fill="none" stroke-linecap="round"/></svg>`,
+    // 编辑 - 歪歪扭扭的铅笔
+    edit: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M16.8 3.3c.4-.5 1.2-.6 1.8-.2l2.1 1.9c.5.5.5 1.3.1 1.8L8.3 19.6c-.1.2-.3.3-.5.4l-4.6 1.2 1.3-4.5c.1-.2.2-.4.4-.5L16.8 3.3z" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.8 5.8l3.6 3.4" fill="none" stroke-linecap="round"/></svg>`,
+    // 删除 - 手绘垃圾桶
+    trash: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M4.3 6.2c.1-.1 15.2.2 15.3.1" stroke-linecap="round"/><path d="M8.8 6.1l.2-1.6c.1-.4.4-.7.8-.7h4.2c.4 0 .7.3.8.7l.3 1.5" fill="none" stroke-linecap="round"/><path d="M6.4 6.3c.2.4 1.2 12.8 1.3 13.1.1.4.5.7.9.7h6.6c.4 0 .8-.3.9-.7l1.4-13" fill="none" stroke-linecap="round"/><path d="M9.6 10.2l.3 5.8M12.1 10.1l-.1 5.9M14.5 10.2l-.4 5.7" stroke-linecap="round"/></svg>`,
+    // 时钟 - 手绘圆
+    clock: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 3c-5 .1-8.8 4.1-8.7 9.1.1 4.9 4.2 8.8 9.1 8.7 4.9-.1 8.8-4.2 8.7-9.1C21 6.8 16.9 3 12 3z" fill="none" stroke-linecap="round"/><path d="M12 6.8v5.4l3.2 1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    // 太阳 - 不规则光芒
+    sun: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 8c-2.3.1-4.1 2-4 4.3.1 2.2 2 4 4.3 3.9 2.2-.1 4-2 3.9-4.3-.1-2.2-2-3.9-4.2-3.9z" fill="none" stroke-linecap="round"/><path d="M12 2.5v2.3M12.1 19.3v2.2M4.2 11.9l2.1.1M17.8 12.1l2.2-.1M5.7 5.5l1.6 1.7M16.9 16.6l1.5 1.7M5.5 18.4l1.7-1.5M16.7 7.2l1.7-1.6" stroke-linecap="round"/></svg>`,
+    // 月亮 - 手绘弧线
+    moon: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M19.8 14.2c-.8.5-2.4.9-3.9.6-3.8-.6-6.6-4-6.2-8.3.1-.9.4-1.8.8-2.6-3.8 1.6-6.1 5.4-5.2 9.6 1 4.3 4.9 7.2 9.3 6.7 2.9-.3 5.3-1.9 6.7-4.3-.5.3-.9.4-1.5.3z" fill="none" stroke-linecap="round"/></svg>`,
+    // 登录 - 手绘箭头
+    login: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M15.2 3.8h3.8c.4 0 .8.4.8.9l-.1 14.7c0 .5-.4.9-.9.9l-3.6-.1" fill="none" stroke-linecap="round"/><path d="M10.3 16.3l4.3-4.4-4.5-4.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.4 12l-10.6.1" stroke-linecap="round"/></svg>`,
+    // 保存 - 手绘软盘
+    save: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M18.8 20.8l-13.6.1c-.4 0-.9-.4-.9-.9l.1-15.8c0-.4.4-.8.9-.8l10.8-.1 3.6 3.7-.1 12.9c0 .5-.4.9-.8.9z" fill="none" stroke-linecap="round"/><path d="M7.2 3.3l-.1 4.9 7.8-.1.1-4.8" fill="none" stroke-linecap="round"/><path d="M6.3 12.2l11.5-.1-.1 7.6-11.6.1.2-7.6z" fill="none" stroke-linecap="round"/></svg>`,
+    // 下载 - 手绘箭头
+    grab: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12.1 3.6l-.2 12.8" stroke-linecap="round"/><path d="M7.2 12.2l4.8 4.6 5-4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 19.9l15.7-.2" stroke-linecap="round"/></svg>`,
+    // 标签 - 手绘造型
+    tag: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M20.2 13.8l-7.3 7.3c-.5.4-1.1.4-1.6.1L2.8 12.5c-.2-.2-.4-.5-.4-.8l.1-7.6c0-.4.4-.8.9-.8l7.5-.1c.3 0 .6.1.8.3l8.5 8.6c.4.5.4 1.2 0 1.7z" fill="none" stroke-linecap="round"/><circle cx="7.2" cy="7.6" r="1.4" fill="none"/></svg>`,
+    // 导出
+    export: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 3.5v10.8" stroke-linecap="round"/><path d="M7.2 8.8l4.8-4.6 5 4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 14.5v4.8c0 .4.4.8.9.8h13.8c.5 0 .9-.4.9-.8v-4.7" fill="none" stroke-linecap="round"/></svg>`,
+    // 导入
+    import: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 14.3V3.5" stroke-linecap="round"/><path d="M7.2 9.5l4.8 4.6 5-4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.2 14.5v4.8c0 .4.4.8.9.8h13.8c.5 0 .9-.4.9-.8v-4.7" fill="none" stroke-linecap="round"/></svg>`,
+    // 警告
+    warning: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2.5L2.5 20.5h19L12 2.5z" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v5" stroke-linecap="round"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>`
 };
 
 const $ = id => document.getElementById(id);
@@ -52,6 +74,177 @@ function createStore(initialState = {}) {
         subscribe,
     };
 }
+
+// 从所有 tagOrders 中移除指定 key
+function removeKeyFromTagOrders(tagOrders, keyToRemove) {
+    const newTagOrders = {};
+    for (const k in tagOrders) {
+        newTagOrders[k] = tagOrders[k].filter(t => t !== keyToRemove);
+    }
+    return newTagOrders;
+}
+
+// 处理账号标签变化时更新 tagOrders
+function updateTagOrdersOnTagChange(tagOrders, key, oldTagIds, newTagIds) {
+    const orders = { ...tagOrders };
+    const removedTags = oldTagIds.filter(id => !newTagIds.includes(id));
+    const addedTags = newTagIds.filter(id => !oldTagIds.includes(id));
+    const wasUntagged = oldTagIds.length === 0;
+    const isNowUntagged = newTagIds.length === 0;
+
+    // 从移除的标签中删除
+    removedTags.forEach(tagId => {
+        if (orders[tagId]) orders[tagId] = orders[tagId].filter(t => t !== key);
+    });
+
+    // 从无标签移除
+    if (wasUntagged && !isNowUntagged && orders.untagged) {
+        orders.untagged = orders.untagged.filter(t => t !== key);
+    }
+
+    // 添加到新标签
+    addedTags.forEach(tagId => {
+        if (!orders[tagId]) orders[tagId] = [];
+        if (!orders[tagId].includes(key)) orders[tagId].push(key);
+    });
+
+    // 添加到无标签
+    if (!wasUntagged && isNowUntagged) {
+        if (!orders.untagged) orders.untagged = [];
+        if (!orders.untagged.includes(key)) orders.untagged.push(key);
+    }
+
+    return orders;
+}
+
+// 新增账号时添加 key 到 tagOrders
+function addKeyToTagOrders(tagOrders, key, tagIds) {
+    const orders = { ...tagOrders };
+
+    // 加入 all
+    if (!orders.all) orders.all = [];
+    orders.all.push(key);
+
+    // 加入标签或无标签
+    if (tagIds.length > 0) {
+        tagIds.forEach(tagId => {
+            if (!orders[tagId]) orders[tagId] = [];
+            orders[tagId].push(key);
+        });
+    } else {
+        if (!orders.untagged) orders.untagged = [];
+        orders.untagged.push(key);
+    }
+
+    return orders;
+}
+
+// 记忆化工具函数 - 缓存计算结果
+function memoize(fn) {
+    let lastArgs = null;
+    let lastResult = null;
+    return (...args) => {
+        // 浅比较参数
+        if (lastArgs && args.length === lastArgs.length &&
+            args.every((a, i) => a === lastArgs[i])) {
+            return lastResult;
+        }
+        lastArgs = args;
+        lastResult = fn(...args);
+        return lastResult;
+    };
+}
+
+// 创建账号 Map (key -> account)，用于 O(1) 查找
+function createAccountMap(accounts) {
+    return new Map(accounts.map(a => [a.key, a]));
+}
+
+// 通用事件委托函数
+function delegate(container, selector, handler) {
+    container.addEventListener('click', (e) => {
+        const target = e.target.closest(selector);
+        if (target) handler(target, e);
+    });
+}
+
+// 合并存储和状态更新
+async function saveAndUpdate(storageData, stateData, store, callback) {
+    await chrome.storage.local.set(storageData);
+    store.setState(stateData);
+    if (callback) callback();
+}
+
+// 初始化/同步 tagOrders，确保数据完整性
+async function initTagOrders(accounts, tagOrders) {
+    let needsSave = false;
+    const orders = { ...tagOrders };
+
+    // 确保 all 排序存在
+    if (!orders.all) {
+        orders.all = accounts.map(a => a.key);
+        needsSave = true;
+    }
+
+    // 确保每个账号在对应的标签排序中
+    accounts.forEach(acc => {
+        const accTagIds = acc.tagIds || [];
+
+        if (accTagIds.length === 0) {
+            // 无标签账号
+            if (!orders.untagged) orders.untagged = [];
+            if (!orders.untagged.includes(acc.key)) {
+                orders.untagged.push(acc.key);
+                needsSave = true;
+            }
+        } else {
+            // 有标签账号
+            accTagIds.forEach(tagId => {
+                if (!orders[tagId]) orders[tagId] = [];
+                if (!orders[tagId].includes(acc.key)) {
+                    orders[tagId].push(acc.key);
+                    needsSave = true;
+                }
+            });
+        }
+    });
+
+    if (needsSave) {
+        await chrome.storage.local.set({ [TAG_ORDERS_KEY]: orders });
+    }
+
+    return orders;
+}
+
+// 记忆化的过滤和排序函数 - 避免重复计算
+const getFilteredAccounts = memoize((accounts, filter, filterTagId, tagOrders) => {
+    // 确定当前排序 key
+    const orderKey = (!filterTagId || filterTagId === 'all') ? 'all' : filterTagId;
+
+    // 先按标签筛选
+    let result = accounts;
+    if (filterTagId === 'untagged') {
+        result = accounts.filter(acc => !acc.tagIds || acc.tagIds.length === 0);
+    } else if (filterTagId && filterTagId !== 'all') {
+        result = accounts.filter(acc => (acc.tagIds || []).includes(filterTagId));
+    }
+
+    // 再按搜索词筛选
+    if (filter) {
+        result = result.filter(acc => acc.name.toLowerCase().includes(filter.toLowerCase()));
+    }
+
+    // 按 tagOrders 排序
+    const order = tagOrders[orderKey] || [];
+    return [...result].sort((a, b) => {
+        const idxA = order.indexOf(a.key);
+        const idxB = order.indexOf(b.key);
+        if (idxA === -1 && idxB === -1) return 0;
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+    });
+});
 
 // --- Components ---
 function AccountCard(account, index, store) {
@@ -143,32 +336,8 @@ function App(store) {
     const render = (state) => {
         const { accounts, filter, filterTagId, tagOrders } = state;
 
-        // 确定当前排序 key
-        const orderKey = (!filterTagId || filterTagId === 'all') ? 'all' : filterTagId;
-
-        // 先按标签筛选
-        let filteredAccounts = accounts;
-        if (filterTagId === 'untagged') {
-            filteredAccounts = accounts.filter(acc => !acc.tagIds || acc.tagIds.length === 0);
-        } else if (filterTagId && filterTagId !== 'all') {
-            filteredAccounts = accounts.filter(acc => (acc.tagIds || []).includes(filterTagId));
-        }
-
-        // 再按搜索词筛选
-        if (filter) {
-            filteredAccounts = filteredAccounts.filter(acc => acc.name.toLowerCase().includes(filter.toLowerCase()));
-        }
-
-        // 按 tagOrders 排序
-        const order = tagOrders[orderKey] || [];
-        filteredAccounts = [...filteredAccounts].sort((a, b) => {
-            const idxA = order.indexOf(a.key);
-            const idxB = order.indexOf(b.key);
-            if (idxA === -1 && idxB === -1) return 0;
-            if (idxA === -1) return 1;
-            if (idxB === -1) return -1;
-            return idxA - idxB;
-        });
+        // 使用记忆化的过滤排序函数（条件不变时直接返回缓存结果）
+        const filteredAccounts = getFilteredAccounts(accounts, filter, filterTagId, tagOrders);
 
         if (filteredAccounts.length === 0) {
             listEl.innerHTML = `<div class="empty-state">📭 无账号</div>`;
@@ -249,45 +418,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filterTagId = data[FILTER_TAG_KEY] || null;
     let tagOrders = data[TAG_ORDERS_KEY] || {};
     const accountKeySet = new Set(accounts.map(acc => acc.key));
+    const accountMap = createAccountMap(accounts);
 
     // 初始化/同步 tagOrders
-    let needsSave = false;
-
-    // 确保 all 排序存在
-    if (!tagOrders.all) {
-        tagOrders.all = accounts.map(a => a.key);
-        needsSave = true;
-    }
-
-    // 确保每个标签的排序都包含对应账号
-    accounts.forEach(acc => {
-        const accTagIds = acc.tagIds || [];
-
-        if (accTagIds.length === 0) {
-            // 无标签账号
-            if (!tagOrders.untagged) tagOrders.untagged = [];
-            if (!tagOrders.untagged.includes(acc.key)) {
-                tagOrders.untagged.push(acc.key);
-                needsSave = true;
-            }
-        } else {
-            // 有标签账号
-            accTagIds.forEach(tagId => {
-                if (!tagOrders[tagId]) tagOrders[tagId] = [];
-                if (!tagOrders[tagId].includes(acc.key)) {
-                    tagOrders[tagId].push(acc.key);
-                    needsSave = true;
-                }
-            });
-        }
-    });
-
-    if (needsSave) {
-        await chrome.storage.local.set({ [TAG_ORDERS_KEY]: tagOrders });
-    }
+    tagOrders = await initTagOrders(accounts, tagOrders);
 
     const store = createStore({
         accounts,
+        accountMap,
         tags,
         tagOrders,
         filterTagId,
@@ -302,6 +440,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     initEventListeners(store);
     initTagManager(store);
     renderTagFilterBar(store);
+
+    // 初始化工具菜单图标
+    $('exportIcon').innerHTML = ICONS.export;
+    $('importIcon').innerHTML = ICONS.import;
+    $('warningIcon').innerHTML = ICONS.warning;
 
     // Theme Init
     const isDark = data[THEME_KEY] === 'dark' || (!data[THEME_KEY] && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -395,61 +538,29 @@ async function saveAccount(store) {
     const name = $('inputName').value.trim();
     const tagIds = getSelectedTagIds();
 
-    const { accounts, accountKeySet, tagOrders } = store.getState();
-    const editIndex = window._editIndex;
+    const { accounts, accountMap, accountKeySet, tagOrders } = store.getState();
+    const editIndex = _editIndex;
 
     // 编辑模式
     if (editIndex >= 0 && editIndex < accounts.length) {
         if (!name) return showToast("请输入名称");
 
         const oldTagIds = accounts[editIndex].tagIds || [];
+        const key = accounts[editIndex].key;
+
         const newAccounts = [...accounts];
         newAccounts[editIndex].name = name;
         newAccounts[editIndex].tagIds = tagIds;
 
-        await chrome.storage.local.set({ [STORAGE_KEY]: newAccounts });
+        const newAccountMap = createAccountMap(newAccounts);
+        const newTagOrders = updateTagOrdersOnTagChange(tagOrders, key, oldTagIds, tagIds);
 
-        // 更新 tagOrders：只处理标签变化
-        const key = accounts[editIndex].key;
-        const newTagOrders = { ...tagOrders };
-
-        const removedTags = oldTagIds.filter(id => !tagIds.includes(id));
-        const addedTags = tagIds.filter(id => !oldTagIds.includes(id));
-        const wasUntagged = oldTagIds.length === 0;
-        const isNowUntagged = tagIds.length === 0;
-
-        // 从移除的标签中删除
-        removedTags.forEach(tagId => {
-            if (newTagOrders[tagId]) {
-                newTagOrders[tagId] = newTagOrders[tagId].filter(t => t !== key);
-            }
-        });
-
-        // 如果之前是无标签，现在有标签了
-        if (wasUntagged && !isNowUntagged && newTagOrders.untagged) {
-            newTagOrders.untagged = newTagOrders.untagged.filter(t => t !== key);
-        }
-
-        // 添加到新增的标签
-        addedTags.forEach(tagId => {
-            if (!newTagOrders[tagId]) newTagOrders[tagId] = [];
-            if (!newTagOrders[tagId].includes(key)) {
-                newTagOrders[tagId].push(key);
-            }
-        });
-
-        // 如果变为无标签
-        if (!wasUntagged && isNowUntagged) {
-            if (!newTagOrders.untagged) newTagOrders.untagged = [];
-            if (!newTagOrders.untagged.includes(key)) {
-                newTagOrders.untagged.push(key);
-            }
-        }
-
-        await chrome.storage.local.set({ [TAG_ORDERS_KEY]: newTagOrders });
-        store.setState({ accounts: newAccounts, tagOrders: newTagOrders });
-        renderTagFilterBar(store);
-
+        await saveAndUpdate(
+            { [STORAGE_KEY]: newAccounts, [TAG_ORDERS_KEY]: newTagOrders },
+            { accounts: newAccounts, accountMap: newAccountMap, tagOrders: newTagOrders },
+            store,
+            () => renderTagFilterBar(store)
+        );
         showToast("已更新");
         toggleModal(false);
         return;
@@ -460,50 +571,28 @@ async function saveAccount(store) {
     if (!name || !key) return showToast("请填写完整");
     if (key.startsWith('"') && key.endsWith('"')) key = key.slice(1, -1);
 
-    // 检查是否重复
-    const existingAccount = accounts.find(acc => acc.key === key);
-    if (existingAccount) {
+    // 使用 accountMap O(1) 检查重复
+    if (accountMap.has(key)) {
         showToast("账号已存在");
         toggleModal(false);
         return;
     }
 
     // 获取抓取时临时存储的套餐
-    const plan = window._grabPlan || null;
-    window._grabPlan = null;
+    const plan = _grabPlan || null;
+    _grabPlan = null;
 
     const newAccount = { name, key, plan, tagIds };
     const newAccounts = [...accounts, newAccount];
+    const newAccountMap = createAccountMap(newAccounts);
+    const newTagOrders = addKeyToTagOrders(tagOrders, key, tagIds);
 
-    // 更新 tagOrders
-    const newTagOrders = { ...tagOrders };
-
-    // 加入 all 排序
-    if (!newTagOrders.all) newTagOrders.all = [];
-    newTagOrders.all.push(key);
-
-    // 加入标签排序或无标签
-    if (tagIds.length > 0) {
-        tagIds.forEach(tagId => {
-            if (!newTagOrders[tagId]) newTagOrders[tagId] = [];
-            newTagOrders[tagId].push(key);
-        });
-    } else {
-        if (!newTagOrders.untagged) newTagOrders.untagged = [];
-        newTagOrders.untagged.push(key);
-    }
-
-    await chrome.storage.local.set({
-        [STORAGE_KEY]: newAccounts,
-        [TAG_ORDERS_KEY]: newTagOrders
-    });
-    store.setState({
-        accounts: newAccounts,
-        accountKeySet: new Set(accountKeySet).add(key),
-        tagOrders: newTagOrders
-    });
-
-    renderTagFilterBar(store);
+    await saveAndUpdate(
+        { [STORAGE_KEY]: newAccounts, [TAG_ORDERS_KEY]: newTagOrders },
+        { accounts: newAccounts, accountMap: newAccountMap, accountKeySet: new Set(accountKeySet).add(key), tagOrders: newTagOrders },
+        store,
+        () => renderTagFilterBar(store)
+    );
     showToast("已保存");
     toggleModal(false);
 }
@@ -653,8 +742,8 @@ function handleListClick(e, store) {
     const li = e.target.closest('li');
     if (!li) return;
     const key = li.dataset.key;
-    const { accounts, tagOrders } = store.getState();
-    const acc = accounts.find(a => a.key === key);
+    const { accounts, accountMap, tagOrders } = store.getState();
+    const acc = accountMap.get(key); // O(1) 查找
     const idx = accounts.findIndex(a => a.key === key);
 
     if (!acc) return;
@@ -670,25 +759,20 @@ function handleListClick(e, store) {
         $('inputName').value = acc.name || '';
         toggleModal(true, idx, acc.tagIds || []);
     } else if (target.classList.contains('action-delete')) {
-        showDeleteModal(acc.name, () => {
+        showDeleteModal(acc.name, async () => {
             const keyToRemove = acc.key;
             const newAccounts = accounts.filter(a => a.key !== keyToRemove);
             const newAccountKeySet = new Set(newAccounts.map(a => a.key));
+            const newAccountMap = createAccountMap(newAccounts);
+            const newTagOrders = removeKeyFromTagOrders(tagOrders, keyToRemove);
 
-            // 从所有 tagOrders 中移除该 key
-            const newTagOrders = {};
-            for (const k in tagOrders) {
-                newTagOrders[k] = tagOrders[k].filter(t => t !== keyToRemove);
-            }
-
-            chrome.storage.local.set({
-                [STORAGE_KEY]: newAccounts,
-                [TAG_ORDERS_KEY]: newTagOrders
-            }).then(() => {
-                store.setState({ accounts: newAccounts, accountKeySet: newAccountKeySet, tagOrders: newTagOrders });
-                renderTagFilterBar(store);
-                showToast("已删除");
-            });
+            await saveAndUpdate(
+                { [STORAGE_KEY]: newAccounts, [TAG_ORDERS_KEY]: newTagOrders },
+                { accounts: newAccounts, accountMap: newAccountMap, accountKeySet: newAccountKeySet, tagOrders: newTagOrders },
+                store,
+                () => renderTagFilterBar(store)
+            );
+            showToast("已删除");
         });
     }
 }
@@ -737,7 +821,7 @@ function clearData(store) {
 
 function toggleModal(show, editIndex = -1, selectedTagIds = []) {
     const el = $('editForm'), overlay = $('modalOverlay');
-    window._editIndex = editIndex;
+    _editIndex = editIndex;
 
     if (show) {
         if (editIndex >= 0) {
@@ -753,7 +837,7 @@ function toggleModal(show, editIndex = -1, selectedTagIds = []) {
     } else {
         el.classList.remove('open'); overlay.classList.remove('open');
         $('inputName').value = $('inputKey').value = '';
-        window._editIndex = -1;
+        _editIndex = -1;
     }
 }
 
@@ -819,6 +903,16 @@ function exportData(accounts) {
     URL.revokeObjectURL(url);
 }
 
+// 颜色选择器事件处理器工厂函数
+function createColorPickerHandler(containerId) {
+    return (e) => {
+        if (e.target.classList.contains('color-option')) {
+            $(containerId).querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+            e.target.classList.add('selected');
+        }
+    };
+}
+
 // ========== 标签管理系统 ==========
 
 function initTagManager(store) {
@@ -829,21 +923,9 @@ function initTagManager(store) {
     // 添加标签按钮
     $('addTagBtn').onclick = () => addNewTag(store);
 
-    // 颜色选择器
-    $('colorPicker').onclick = (e) => {
-        if (e.target.classList.contains('color-option')) {
-            $('colorPicker').querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
-            e.target.classList.add('selected');
-        }
-    };
-
-    // 编辑弹窗颜色选择器
-    $('editColorPicker').onclick = (e) => {
-        if (e.target.classList.contains('color-option')) {
-            $('editColorPicker').querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
-            e.target.classList.add('selected');
-        }
-    };
+    // 颜色选择器（使用工厂函数简化）
+    $('colorPicker').onclick = createColorPickerHandler('colorPicker');
+    $('editColorPicker').onclick = createColorPickerHandler('editColorPicker');
 
     // 编辑弹窗按钮
     $('cancelEditTagBtn').onclick = () => closeTagEditModal();
@@ -900,7 +982,7 @@ function renderTagList(store) {
   `).join('');
 }
 
-function addNewTag(store) {
+async function addNewTag(store) {
     const name = $('newTagName').value.trim();
     if (!name) return showToast("请输入标签名称");
 
@@ -921,12 +1003,14 @@ function addNewTag(store) {
     };
 
     const newTags = [...tags, newTag];
-    chrome.storage.local.set({ [TAGS_KEY]: newTags }).then(() => {
-        store.setState({ tags: newTags });
-        renderTagList(store);
-        $('newTagName').value = '';
-        showToast("标签已添加");
-    });
+    await saveAndUpdate(
+        { [TAGS_KEY]: newTags },
+        { tags: newTags },
+        store,
+        () => renderTagList(store)
+    );
+    $('newTagName').value = '';
+    showToast("标签已添加");
 }
 
 function deleteTag(tagId, store) {
@@ -934,7 +1018,7 @@ function deleteTag(tagId, store) {
     const tag = tags.find(t => t.id === tagId);
     const tagName = tag ? tag.name : '此标签';
 
-    showDeleteModal(tagName, () => {
+    showDeleteModal(tagName, async () => {
         const { tags, accounts, tagOrders } = store.getState();
         const newTags = tags.filter(t => t.id !== tagId);
 
@@ -948,16 +1032,13 @@ function deleteTag(tagId, store) {
         const newTagOrders = { ...tagOrders };
         delete newTagOrders[tagId];
 
-        chrome.storage.local.set({
-            [TAGS_KEY]: newTags,
-            [STORAGE_KEY]: newAccounts,
-            [TAG_ORDERS_KEY]: newTagOrders
-        }).then(() => {
-            store.setState({ tags: newTags, accounts: newAccounts, tagOrders: newTagOrders });
-            renderTagList(store);
-            renderTagFilterBar(store);
-            showToast("标签已删除");
-        });
+        await saveAndUpdate(
+            { [TAGS_KEY]: newTags, [STORAGE_KEY]: newAccounts, [TAG_ORDERS_KEY]: newTagOrders },
+            { tags: newTags, accounts: newAccounts, tagOrders: newTagOrders },
+            store,
+            () => { renderTagList(store); renderTagFilterBar(store); }
+        );
+        showToast("标签已删除");
     });
 }
 
@@ -967,7 +1048,7 @@ function openTagEditModal(tagId, store) {
     const tag = tags.find(t => t.id === tagId);
     if (!tag) return;
 
-    window._editingTagId = tagId;
+    _editingTagId = tagId;
 
     // 填充当前标签信息
     $('editTagName').value = tag.name;
@@ -991,8 +1072,8 @@ function closeTagEditModal() {
 }
 
 // 保存编辑的标签
-function saveEditTag(store) {
-    const tagId = window._editingTagId;
+async function saveEditTag(store) {
+    const tagId = _editingTagId;
     if (!tagId) return;
 
     const newName = $('editTagName').value.trim();
@@ -1004,12 +1085,14 @@ function saveEditTag(store) {
     const { tags } = store.getState();
     const newTags = tags.map(t => t.id === tagId ? { ...t, name: newName, color: newColor } : t);
 
-    chrome.storage.local.set({ [TAGS_KEY]: newTags }).then(() => {
-        store.setState({ tags: newTags });
-        renderTagList(store);
-        closeTagEditModal();
-        showToast("标签已更新");
-    });
+    await saveAndUpdate(
+        { [TAGS_KEY]: newTags },
+        { tags: newTags },
+        store,
+        () => { renderTagList(store); renderTagFilterBar(store); }
+    );
+    closeTagEditModal();
+    showToast("标签已更新");
 }
 
 // 渲染账号编辑弹窗中的标签选择器
