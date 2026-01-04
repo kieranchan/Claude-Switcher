@@ -1,6 +1,6 @@
 # Claude Session Switcher
 
-**[English](README.md)** | [中文文档](README_ZH.md)
+[English](README.md) | **[中文文档](README_ZH.md)**
 
 A lightweight, high-performance Chrome extension for seamlessly switching between multiple [Claude.ai](https://claude.ai) accounts. Built with **Manifest V3** and vanilla JavaScript, featuring a modern UI and optimized for speed.
 
