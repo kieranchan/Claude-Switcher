@@ -173,7 +173,23 @@ async function saveAccount(store) {
             { [STORAGE_KEY]: newAccounts, [TAG_ORDERS_KEY]: newTagOrders },
             { accounts: newAccounts, accountMap: newAccountMap, tagOrders: newTagOrders },
             store,
-            () => renderTagFilterBar(store)
+            () => {
+                // 检查当前筛选分类是否变空，如果空则跳回"全部"
+                const { filterTagId } = store.getState();
+                if (filterTagId && filterTagId !== 'all') {
+                    let isEmpty = false;
+                    if (filterTagId === 'untagged') {
+                        isEmpty = newAccounts.every(a => a.tagIds && a.tagIds.length > 0);
+                    } else {
+                        isEmpty = newAccounts.every(a => !(a.tagIds || []).includes(filterTagId));
+                    }
+                    if (isEmpty) {
+                        store.setState({ filterTagId: 'all' });
+                        chrome.storage.local.set({ [FILTER_TAG_KEY]: 'all' });
+                    }
+                }
+                renderTagFilterBar(store);
+            }
         );
         showToast("已更新");
         toggleModal(false);
@@ -368,7 +384,23 @@ function handleListClick(e, store) {
                 { [STORAGE_KEY]: newAccounts, [TAG_ORDERS_KEY]: newTagOrders },
                 { accounts: newAccounts, accountMap: newAccountMap, accountKeySet: newAccountKeySet, tagOrders: newTagOrders },
                 store,
-                () => renderTagFilterBar(store)
+                () => {
+                    // 检查当前筛选分类是否变空，如果空则跳回"全部"
+                    const { filterTagId } = store.getState();
+                    if (filterTagId && filterTagId !== 'all') {
+                        let isEmpty = false;
+                        if (filterTagId === 'untagged') {
+                            isEmpty = newAccounts.every(a => a.tagIds && a.tagIds.length > 0);
+                        } else {
+                            isEmpty = newAccounts.every(a => !(a.tagIds || []).includes(filterTagId));
+                        }
+                        if (isEmpty) {
+                            store.setState({ filterTagId: 'all' });
+                            chrome.storage.local.set({ [FILTER_TAG_KEY]: 'all' });
+                        }
+                    }
+                    renderTagFilterBar(store);
+                }
             );
             showToast("已删除");
         });
@@ -582,7 +614,7 @@ async function addNewTag(store) {
         { [TAGS_KEY]: newTags },
         { tags: newTags, tagMap: newTagMap },
         store,
-        () => renderTagList(store)
+        () => { renderTagList(store); renderTagFilterBar(store); }
     );
     $('newTagName').value = '';
     showToast("标签已添加");
