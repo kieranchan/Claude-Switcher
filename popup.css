@@ -18,6 +18,7 @@
     --badge-pro-bg: linear-gradient(135deg, #9333ea, #7c3aed);
     --badge-team-bg: linear-gradient(135deg, #3b82f6, #2563eb);
     --badge-free-bg: linear-gradient(135deg, #6b7280, #4b5563);
+    --badge-max-bg: linear-gradient(135deg, #f59e0b, #ea580c);
 }
 
 /* Dark Mode (Triggered by class) */
@@ -267,6 +268,12 @@ main {
 
 .badge-free {
     background: var(--badge-free-bg);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.badge-max {
+    background: var(--badge-max-bg);
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }

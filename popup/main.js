@@ -252,26 +252,32 @@ async function grabUserInfo() {
         const res = await chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
             func: () => {
-                const allTruncate = document.querySelectorAll('[class*="truncate"]');
-                if (allTruncate.length < 2) return null;
-
-                let name = null;
-                let plan = null;
-
-                for (let i = allTruncate.length - 1; i >= 0; i--) {
-                    const text = allTruncate[i].textContent.trim();
-                    const textLower = text.toLowerCase();
-
-                    if (textLower.includes(' plan')) {
-                        plan = text;
-                        if (i > 0) {
-                            name = allTruncate[i - 1].textContent.trim();
-                        }
-                        break;
+                // 主策略：sidebar 底部 Settings 按钮内的 truncate 元素依次为 [name, plan/organization]。
+                // Team 账号第二个 truncate 是组织名（无 "plan" 字样），不能靠文本匹配定位。
+                const settingsBtn = document.querySelector('button[aria-label*="Settings" i]');
+                if (settingsBtn) {
+                    const truncates = settingsBtn.querySelectorAll('[class*="truncate"]');
+                    if (truncates.length >= 2) {
+                        const name = truncates[0].textContent.trim();
+                        const plan = truncates[truncates.length - 1].textContent.trim();
+                        if (name && plan) return { name, plan };
                     }
                 }
 
-                return { name, plan };
+                // 备用策略：全局扫描 truncate 元素找含 "plan" 的文本（Free/Pro/Max）
+                const allTruncate = document.querySelectorAll('[class*="truncate"]');
+                if (allTruncate.length < 2) return null;
+
+                for (let i = allTruncate.length - 1; i >= 0; i--) {
+                    const text = allTruncate[i].textContent.trim();
+                    if (text.toLowerCase().includes(' plan')) {
+                        return {
+                            name: i > 0 ? allTruncate[i - 1].textContent.trim() : null,
+                            plan: text,
+                        };
+                    }
+                }
+                return null;
             }
         });
         return res?.[0]?.result || null;

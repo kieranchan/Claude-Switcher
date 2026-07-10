@@ -116,6 +116,18 @@ export function sanitize(str) {
     })[c]);
 }
 
+// 归一化 plan 字符串为 'max' | 'pro' | 'free' | 'team' | null
+// Team 账号在 Claude sidebar 上显示的是组织名（无 "plan" 字样），因此兜底判为 team
+export function detectPlanKind(planText) {
+    if (typeof planText !== 'string') return null;
+    const s = planText.toLowerCase().trim();
+    if (!s) return null;
+    if (s.includes('max')) return 'max';
+    if (s.includes('pro')) return 'pro';
+    if (s.includes('free')) return 'free';
+    return 'team';
+}
+
 // 验证账号数据结构
 export function validateAccount(obj) {
     if (!obj || typeof obj !== 'object') return false;

@@ -4,7 +4,7 @@
  */
 
 import { ICONS, TAG_ORDERS_KEY } from './constants.js';
-import { $, memoize, sanitize } from './store.js';
+import { $, memoize, sanitize, detectPlanKind } from './store.js';
 
 // 外部依赖注入（避免循环依赖）
 let switchAccount = () => { };
@@ -89,12 +89,14 @@ export function AccountCard(account, index, store) {
         let badgeHTML = account.key === activeKey ? `<span class="badge badge-current">Current</span>` : '';
 
         if (account.plan) {
-            const planLower = account.plan.toLowerCase();
-            if (planLower.includes('pro')) {
+            const kind = detectPlanKind(account.plan);
+            if (kind === 'max') {
+                badgeHTML += `<span class="badge badge-max">Max</span>`;
+            } else if (kind === 'pro') {
                 badgeHTML += `<span class="badge badge-pro">Pro</span>`;
-            } else if (planLower.includes('team')) {
+            } else if (kind === 'team') {
                 badgeHTML += `<span class="badge badge-team">Team</span>`;
-            } else if (planLower.includes('free')) {
+            } else if (kind === 'free') {
                 badgeHTML += `<span class="badge badge-free">Free</span>`;
             }
         }
