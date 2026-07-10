@@ -19,6 +19,7 @@ import { App, setSwitchAccount } from './components.js';
 // 模块级私有状态
 let _editIndex = -1;
 let _grabPlan = null;
+let _grabOrgName = null;
 let _editingTagId = null;
 let _deleteConfirmCallback = null;
 let _store = null; // 模块内部引用
@@ -209,9 +210,11 @@ async function saveAccount(store) {
     }
 
     const plan = _grabPlan || null;
+    const orgName = _grabOrgName || null;
     _grabPlan = null;
+    _grabOrgName = null;
 
-    const newAccount = { name, key, plan, tagIds };
+    const newAccount = { name, key, plan, orgName, tagIds };
     const newAccounts = [...accounts, newAccount];
     const newAccountMap = createAccountMap(newAccounts);
     const newTagOrders = addKeyToTagOrders(tagOrders, key, tagIds);
@@ -237,8 +240,10 @@ async function grabKey() {
         $('inputKey').value = key;
         if (result?.name) $('inputName').value = result.name;
         _grabPlan = result?.plan;
+        _grabOrgName = result?.orgName || null;
         $('inputName').focus();
-        showToast(`已获取: ${result?.name || 'Key'} (${result?.plan || '--'})`);
+        const planDisplay = _grabOrgName ? `Team - ${_grabOrgName}` : (result?.plan || '--');
+        showToast(`已获取: ${result?.name || 'Key'} (${planDisplay})`);
     } catch {
         showToast("获取失败");
     }
@@ -253,14 +258,19 @@ async function grabUserInfo() {
             target: { tabId: tabs[0].id },
             func: () => {
                 // 主策略：sidebar 底部 Settings 按钮内的 truncate 元素依次为 [name, plan/organization]。
-                // Team 账号第二个 truncate 是组织名（无 "plan" 字样），不能靠文本匹配定位。
+                // Team 账号第二行是组织名（无 "plan" 字样），归一化为 plan="Team plan" + orgName=<组织名>。
                 const settingsBtn = document.querySelector('button[aria-label*="Settings" i]');
                 if (settingsBtn) {
                     const truncates = settingsBtn.querySelectorAll('[class*="truncate"]');
                     if (truncates.length >= 2) {
                         const name = truncates[0].textContent.trim();
-                        const plan = truncates[truncates.length - 1].textContent.trim();
-                        if (name && plan) return { name, plan };
+                        const secondLine = truncates[truncates.length - 1].textContent.trim();
+                        if (name && secondLine) {
+                            if (/\bplan\b/i.test(secondLine)) {
+                                return { name, plan: secondLine, orgName: null };
+                            }
+                            return { name, plan: 'Team plan', orgName: secondLine };
+                        }
                     }
                 }
 
@@ -274,6 +284,7 @@ async function grabUserInfo() {
                         return {
                             name: i > 0 ? allTruncate[i - 1].textContent.trim() : null,
                             plan: text,
+                            orgName: null,
                         };
                     }
                 }
@@ -311,13 +322,15 @@ async function syncCurrentAccount(store) {
             i === idx ? {
                 ...acc,
                 name: result.name || acc.name,
-                plan: result.plan || acc.plan
+                plan: result.plan || acc.plan,
+                orgName: result.orgName ?? acc.orgName ?? null,
             } : acc
         );
 
         await chrome.storage.local.set({ [STORAGE_KEY]: newAccounts });
         store.setState({ accounts: newAccounts });
-        showToast(`已更新: ${result.name || ''} (${result.plan || '--'})`);
+        const planDisplay = result.orgName ? `Team - ${result.orgName}` : (result.plan || '--');
+        showToast(`已更新: ${result.name || ''} (${planDisplay})`);
     } else {
         showToast("更新失败，请确保 Claude 页面已打开");
     }

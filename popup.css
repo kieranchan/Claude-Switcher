@@ -278,6 +278,21 @@ main {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
+.team-org {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+    background: var(--bg-color);
+    color: var(--text-sub);
+    border: 1px solid var(--border-color);
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    align-self: center;
+}
+
 /* Modal Overlay */
 .modal-overlay {
     position: fixed;

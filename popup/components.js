@@ -96,6 +96,14 @@ export function AccountCard(account, index, store) {
                 badgeHTML += `<span class="badge badge-pro">Pro</span>`;
             } else if (kind === 'team') {
                 badgeHTML += `<span class="badge badge-team">Team</span>`;
+                // 旧数据兼容：无 orgName 且 plan 不含 "plan" 字样时，plan 字段本身就是组织名
+                let orgName = account.orgName;
+                if (!orgName && account.plan && !/\bplan\b/i.test(account.plan)) {
+                    orgName = account.plan;
+                }
+                if (orgName) {
+                    badgeHTML += `<span class="team-org" title="${sanitize(orgName)}">${sanitize(orgName)}</span>`;
+                }
             } else if (kind === 'free') {
                 badgeHTML += `<span class="badge badge-free">Free</span>`;
             }
