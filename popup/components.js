@@ -86,7 +86,7 @@ export function AccountCard(account, index, store) {
         const { activeKey } = store.getState();
         li.classList.toggle('active', account.key === activeKey);
 
-        let badgeHTML = account.key === activeKey ? `<span class="badge badge-current">Current</span>` : '';
+        let badgeHTML = '';
 
         if (account.plan) {
             const kind = detectPlanKind(account.plan);
